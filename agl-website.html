@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AGL – Advanced Global Logistics</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --primary:#1a1a2e;
+  --accent:#2e7d32;
+  --accent2:#2d5a8e;
+  --gray:#f7f7f7;
+  --text:#1a1a1a;
+  --muted:#666;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+html{font-size:16px;}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#fff;color:var(--text);overflow-x:hidden;}
+
+/* ===== NAVBAR ===== */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  background:rgba(255,255,255,0.97);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(0,0,0,0.07);
+  height:100px;padding:0 5%;
+  display:flex;align-items:center;justify-content:space-between;
+  transition:box-shadow .4s;
+}
+nav.scrolled{box-shadow:0 4px 32px rgba(0,0,0,0.08);}
+.nav-logo{
+  font-size:1.75rem;font-weight:900;letter-spacing:3px;
+  color:var(--primary);text-decoration:none;
+}
+.nav-logo span{color:var(--accent);}
+.nav-links{display:flex;gap:4px;align-items:center;position:relative;left:40px;}
+html.en .nav-links{left:-60px;}
+.nav-links a{
+  text-decoration:none;color:var(--text);
+  padding:12px 18px;border-radius:8px;
+  font-size:1.1rem;font-weight:600;
+  transition:all .25s;position:relative;
+}
+.nav-links a::after{
+  content:'';position:absolute;bottom:2px;
+  left:50%;right:50%;height:2px;
+  background:var(--accent);border-radius:2px;
+  transition:all .3s var(--ease);
+}
+.nav-links a:hover::after,.nav-links a.active::after{left:12px;right:12px;}
+.nav-links a:hover,.nav-links a.active{color:var(--primary);font-weight:700;}
+.lang-btn{
+  background:var(--primary);color:#fff;
+  border:none;padding:10px 24px;border-radius:8px;
+  cursor:pointer;font-size:1.1rem;font-weight:700;
+  transition:all .25s;letter-spacing:.5px;
+}
+.lang-btn:hover{background:var(--accent);color:var(--primary);}
+
+/* SCROLL PROGRESS */
+#prog{
+  position:fixed;top:100px;left:0;z-index:999;
+  height:3px;width:0%;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  transition:width .08s linear;
+}
+
+/* ===== CURTAIN TRANSITION ===== */
+#curtain{
+  position:fixed;inset:0;z-index:9998;
+  pointer-events:none;
+  display:flex;flex-direction:column;
+}
+.curtain-strip{
+  flex:1;background:var(--primary);
+  transform:scaleY(0);transform-origin:bottom;
+  transition:transform .42s var(--ease);
+}
+#curtain.going .curtain-strip{transform:scaleY(1);}
+#curtain.going .curtain-strip:nth-child(1){transition-delay:0s;}
+#curtain.going .curtain-strip:nth-child(2){transition-delay:.05s;}
+#curtain.going .curtain-strip:nth-child(3){transition-delay:.1s;}
+#curtain.leaving .curtain-strip{
+  transform:scaleY(0);transform-origin:top;
+  transition:transform .4s var(--ease);
+}
+#curtain.leaving .curtain-strip:nth-child(1){transition-delay:.08s;}
+#curtain.leaving .curtain-strip:nth-child(2){transition-delay:.04s;}
+#curtain.leaving .curtain-strip:nth-child(3){transition-delay:0s;}
+
+/* ===== REVEAL ANIMATIONS (SMOOTH UPWARD SLIDE) ===== */
+.rv{opacity:0;transform:translateY(40px);transition:opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);}
+.rv.on{opacity:1;transform:translateY(0);}
+
+.rvl{opacity:0;transform:translateX(-40px);transition:opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);}
+.rvl.on{opacity:1;transform:translateX(0);}
+
+.rvr{opacity:0;transform:translateX(40px);transition:opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);}
+.rvr.on{opacity:1;transform:translateX(0);}
+
+.rvs{opacity:0;transform:scale(0.92);transition:opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);}
+.rvs.on{opacity:1;transform:scale(1);}
+
+.d1{transition-delay:.1s!important;}
+.d2{transition-delay:.2s!important;}
+.d3{transition-delay:.3s!important;}
+.d4{transition-delay:.4s!important;}
+.d5{transition-delay:.5s!important;}
+.d6{transition-delay:.6s!important;}
+
+/* ===== COMMON SECTION ===== */
+section{padding:110px 5% 90px;}
+.sec-tag{
+  display:inline-block;
+  background:rgba(46,125,50,.12);color:var(--accent);
+  border:1px solid rgba(46,125,50,.35);
+  padding:5px 18px;border-radius:100px;
+  font-size:.75rem;font-weight:700;letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:14px;
+}
+.sec-title{
+  font-size:clamp(1.9rem,3.5vw,3rem);
+  font-weight:800;color:var(--primary);line-height:1.2;margin-bottom:14px;
+}
+.sec-sub{
+  font-size:1rem;color:var(--muted);
+  max-width:560px;margin:0 auto;line-height:1.8;
+}
+.sec-head{text-align:center;margin-bottom:72px;}
+
+/* ===== CAROUSEL / HOME ===== */
+#home{
+  position:relative;height:100vh;min-height:600px;
+  overflow:hidden;background:var(--primary);
+}
+.hero-video-wrap{
+  position:absolute;inset:0;z-index:0;
+  overflow:hidden;
+}
+.hero-video{
+  width:100%;height:100%;object-fit:cover;
+  opacity:0.6;
+}
+.hero-overlay{
+  position:absolute;inset:0;z-index:1;
+  background:linear-gradient(to top, rgba(26,26,46,0.9), transparent);
+}
+.hero-body{
+  position:relative;z-index:2;
+  height:100%;display:flex;flex-direction:column;
+  justify-content:center;padding:0 8%;
+}
+.hero-pill{
+  display:inline-flex;align-items:center;gap:10px;
+  background:rgba(46,125,50,.18);border:1px solid rgba(46,125,50,.45);
+  color:var(--accent);padding:7px 22px;border-radius:100px;
+  font-size:.75rem;font-weight:700;letter-spacing:2px;
+  margin-bottom:28px;width:fit-content;
+}
+.hero-pill-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--accent);animation:pulse 1.8s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.6);}}
+
+.hero-h1{
+  font-size:clamp(2.6rem,5.2vw,5rem);font-weight:900;
+  color:#fff;line-height:1.08;margin-bottom:22px;
+  text-shadow:0 4px 24px rgba(0,0,0,.3);
+}
+.hero-h1 .hl{color:var(--accent);}
+
+.hero-p{
+  font-size:1.08rem;color:rgba(255,255,255,.8);
+  max-width:580px;line-height:1.8;margin-bottom:40px;
+}
+.hero-btns{display:flex;gap:14px;flex-wrap:wrap;}
+
+.btn-g{
+  background:var(--accent);color:var(--primary);
+  padding:15px 36px;border:none;border-radius:12px;
+  font-size:.95rem;font-weight:800;cursor:pointer;
+  transition:all .3s var(--ease);text-decoration:none;
+  display:inline-block;letter-spacing:.3px;
+}
+.btn-g:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(46,125,50,.5);}
+.btn-w{
+  background:transparent;color:#fff;
+  padding:15px 36px;border:2px solid rgba(255,255,255,.45);
+  border-radius:12px;font-size:.95rem;font-weight:600;cursor:pointer;
+  transition:all .3s;text-decoration:none;display:inline-block;
+}
+.btn-w:hover{border-color:#fff;background:rgba(255,255,255,.1);}
+
+/* STATS BAR at bottom */
+.stats-row{
+  position:absolute;bottom:0;left:0;right:0;z-index:3;
+  background:rgba(15,17,35,.72);
+  backdrop-filter:blur(14px);
+  border-top:1px solid rgba(255,255,255,.1);
+  padding:24px 5%;
+  display:grid;grid-template-columns:repeat(4,1fr);
+}
+.stat-col{
+  text-align:center;padding:0 16px;
+  border-right:1px solid rgba(255,255,255,.1);
+}
+html.en .stat-col{border-right:none;border-left:1px solid rgba(255,255,255,.1);}
+.stat-col:last-child{border:none;}
+.stat-n{font-size:2.2rem;font-weight:900;color:var(--accent);line-height:1;}
+.stat-l{font-size:.76rem;color:rgba(255,255,255,.6);margin-top:6px;letter-spacing:.5px;}
+
+/* NAV ARROWS */
+.cr-arrow{
+  position:absolute;top:50%;z-index:4;
+  transform:translateY(-50%);
+  width:52px;height:52px;border-radius:50%;
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.25);
+  backdrop-filter:blur(8px);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:all .3s;
+}
+.cr-arrow:hover{background:rgba(46,125,50,.35);border-color:var(--accent);}
+.cr-arrow svg{width:20px;height:20px;stroke:#fff;stroke-width:2;fill:none;}
+.cr-prev{right:24px;}
+.cr-next{left:24px;}
+html.en .cr-prev{right:auto;left:24px;}
+html.en .cr-next{left:auto;right:24px;}
+
+/* DOTS */
+.cr-dots{
+  position:absolute;bottom:110px;left:50%;
+  transform:translateX(-50%);z-index:4;
+  display:flex;gap:8px;
+}
+.cr-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:rgba(255,255,255,.35);border:none;
+  cursor:pointer;padding:0;transition:all .35s;
+}
+.cr-dot.active{background:var(--accent);width:26px;border-radius:4px;}
+
+/* SCROLL ARROW */
+.scroll-hint{
+  position:absolute;bottom:88px;right:5%;z-index:4;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+}
+html.en .scroll-hint{right:auto;left:5%;}
+.s-arrow{
+  width:22px;height:22px;
+  border-right:2px solid rgba(255,255,255,.4);
+  border-bottom:2px solid rgba(255,255,255,.4);
+  transform:rotate(45deg);
+  animation:ab 1.8s infinite;
+}
+@keyframes ab{0%,100%{transform:rotate(45deg) translate(0,0);}50%{transform:rotate(45deg) translate(5px,5px);}}
+
+/* ===== SERVICES ===== */
+#services{background:#fff;}
+.srv-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:28px;
+  max-width:1200px;margin:0 auto;
+}
+.srv-card{
+  border-radius:20px;overflow:hidden;
+  border:1px solid #ebebeb;
+  transition:all .45s var(--ease);
+  position:relative;
+}
+.srv-card:hover{
+  transform:translateY(-10px);
+  box-shadow:0 28px 64px rgba(26,26,46,.14);
+  border-color:transparent;
+}
+.srv-img{height:220px;overflow:hidden;position:relative;}
+.srv-img img{
+  width:100%;height:100%;object-fit:cover;
+  transition:transform .65s var(--ease);
+}
+.srv-card:hover .srv-img img{transform:scale(1.09);}
+.srv-img-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(to top,rgba(26,26,46,.5) 0%,transparent 60%);
+}
+.srv-body{padding:28px 26px;}
+.srv-num{
+  font-size:.7rem;font-weight:800;color:var(--accent);
+  letter-spacing:2.5px;margin-bottom:10px;
+}
+.srv-name{font-size:1.1rem;font-weight:700;color:var(--primary);margin-bottom:10px;}
+.srv-desc{font-size:.87rem;color:var(--muted);line-height:1.75;}
+.srv-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:16px;}
+.srv-tag{
+  background:rgba(46,125,50,.1);color:var(--accent);
+  padding:4px 12px;border-radius:100px;
+  font-size:.71rem;font-weight:600;letter-spacing:.3px;
+}
+
+/* ===== EXPERIENCE ===== */
+#experience{
+  position:relative;overflow:hidden;
+  padding:0;min-height:90vh;
+  display:flex;align-items:center;
+}
+.exp-bg{
+  position:absolute;inset:0;
+  background:url('images/WhatsApp Image 2026-06-19 at 23.52.26.jpeg') center/cover no-repeat;
+}
+.exp-overlay{
+  position:absolute;inset:0;
+  background:linear-gradient(120deg,rgba(26,26,46,.94) 38%,rgba(26,26,46,.6) 100%);
+}
+.exp-inner{
+  position:relative;z-index:2;
+  max-width:1200px;margin:0 auto;width:100%;
+  padding:120px 5%;
+  display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;
+}
+.exp-left .sec-title{color:#fff;}
+.exp-left .sec-sub{color:rgba(255,255,255,.7);text-align:right;max-width:100%;margin:0;}
+html.en .exp-left .sec-sub{text-align:left;}
+.exp-nums{
+  display:grid;grid-template-columns:1fr 1fr;gap:20px;
+}
+.exp-box{
+  background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:16px;padding:28px 22px;
+  transition:all .4s var(--ease);
+}
+.exp-box:hover{
+  background:rgba(46,125,50,.15);
+  border-color:rgba(46,125,50,.4);
+  transform:translateY(-4px);
+}
+.exp-box .en{font-size:2.5rem;font-weight:900;color:var(--accent);line-height:1;}
+.exp-box .el{font-size:.82rem;color:rgba(255,255,255,.65);margin-top:8px;line-height:1.5;}
+
+/* ===== VALUES ===== */
+#values{background:var(--gray);}
+.val-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:24px;
+  max-width:1200px;margin:0 auto;
+}
+.val-card{
+  background:#fff;border-radius:18px;padding:36px 24px;
+  border:1px solid #ebebeb;text-align:center;
+  transition:all .4s var(--ease);
+}
+.val-card:hover{
+  transform:translateY(-8px);
+  box-shadow:0 20px 48px rgba(26,26,46,.1);
+  border-color:var(--accent);
+}
+.val-icon-wrap{
+  width:64px;height:64px;border-radius:16px;
+  background:rgba(46,125,50,.1);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 20px;transition:background .4s;
+}
+.val-card:hover .val-icon-wrap{background:var(--accent);}
+.val-icon-wrap svg{width:28px;height:28px;stroke:var(--accent);stroke-width:1.8;fill:none;transition:stroke .4s;}
+.val-card:hover .val-icon-wrap svg{stroke:var(--primary);}
+.val-name{font-size:1.05rem;font-weight:700;color:var(--primary);margin-bottom:10px;}
+.val-desc{font-size:.85rem;color:var(--muted);line-height:1.75;}
+
+/* ===== QUOTE ===== */
+#quote{background:var(--primary);position:relative;overflow:hidden;}
+#quote::before{
+  content:'';position:absolute;
+  top:-200px;right:-200px;
+  width:600px;height:600px;border-radius:50%;
+  background:rgba(46,125,50,.06);pointer-events:none;
+}
+.quote-inner{
+  position:relative;z-index:1;
+  max-width:1100px;margin:0 auto;
+  display:grid;grid-template-columns:1fr 1.35fr;gap:80px;align-items:start;
+}
+.quote-left .sec-title{color:#fff;}
+.quote-left .sec-sub{color:rgba(255,255,255,.65);text-align:right;max-width:100%;margin:0;}
+html.en .quote-left .sec-sub{text-align:left;}
+.perks{list-style:none;margin-top:36px;}
+.perks li{
+  display:flex;align-items:center;gap:14px;
+  padding:11px 0;border-bottom:1px solid rgba(255,255,255,.08);
+  font-size:.92rem;color:rgba(255,255,255,.78);
+}
+.perks li:last-child{border:none;}
+.perk-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+.q-form{
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:22px;padding:44px 40px;
+  backdrop-filter:blur(12px);
+}
+.q-form-title{
+  font-size:1.1rem;font-weight:700;color:#fff;
+  margin-bottom:28px;padding-bottom:20px;
+  border-bottom:1px solid rgba(255,255,255,.1);
+}
+.fg{margin-bottom:16px;}
+.fg label{
+  display:block;font-size:.8rem;font-weight:600;
+  color:rgba(255,255,255,.65);margin-bottom:7px;letter-spacing:.3px;
+}
+.fg input,.fg select,.fg textarea{
+  width:100%;padding:12px 16px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:10px;color:#fff;font-size:.9rem;
+  font-family:inherit;outline:none;
+  transition:border-color .25s,background .25s;
+}
+.fg input::placeholder,.fg textarea::placeholder{color:rgba(255,255,255,.28);}
+.fg input:focus,.fg select:focus,.fg textarea:focus{
+  border-color:var(--accent);
+  background:rgba(255,255,255,.12);
+}
+.fg select option{background:#1a1a2e;}
+.fg textarea{height:96px;resize:vertical;}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.qsub{
+  width:100%;padding:15px;margin-top:6px;
+  background:var(--accent);color:var(--primary);
+  border:none;border-radius:12px;
+  font-size:1rem;font-weight:800;cursor:pointer;
+  letter-spacing:.5px;transition:all .3s;
+}
+.qsub:hover{background:#4caf50;transform:translateY(-2px);box-shadow:0 8px 28px rgba(46,125,50,.4);}
+
+/* ===== ABOUT ===== */
+#about{background:var(--gray);}
+.about-wrap{
+  display:grid;grid-template-columns:1fr 1fr;gap:80px;
+  align-items:center;max-width:1200px;margin:0 auto;
+}
+.about-img-side{position:relative;}
+.about-img{width:100%;height:480px;object-fit:cover;border-radius:22px;}
+.about-img-side::before{
+  content:'';position:absolute;
+  top:-18px;right:-18px;
+  width:100%;height:100%;
+  border:2px solid var(--accent);border-radius:22px;z-index:-1;
+}
+html.en .about-img-side::before{right:auto;left:-18px;}
+.about-stamp{
+  position:absolute;bottom:32px;left:32px;
+  background:var(--primary);border-radius:16px;
+  padding:18px 24px;
+  border-right:4px solid var(--accent);
+}
+html.en .about-stamp{left:auto;right:32px;border-right:none;border-left:4px solid var(--accent);}
+.about-stamp .big{font-size:2.1rem;font-weight:900;color:var(--accent);}
+.about-stamp .sm{font-size:.78rem;color:rgba(255,255,255,.7);margin-top:4px;}
+.about-txt .sec-head{text-align:right;margin-bottom:28px;}
+html.en .about-txt .sec-head{text-align:left;}
+.about-txt .sec-sub{text-align:right;max-width:100%;margin:0;}
+html.en .about-txt .sec-sub{text-align:left;}
+.checks{list-style:none;margin-top:28px;}
+.checks li{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:11px 0;border-bottom:1px solid #e8e8e8;
+  font-size:.9rem;color:var(--text);
+}
+.checks li:last-child{border:none;}
+.ck{
+  width:22px;height:22px;border-radius:50%;
+  background:rgba(46,125,50,.15);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;margin-top:1px;
+}
+.ck svg{width:12px;height:12px;stroke:var(--accent);stroke-width:2.5;fill:none;}
+
+/* ===== CONTACT ===== */
+#contact{background:#fff;}
+.contact-wrap{
+  display:grid;grid-template-columns:1fr 1.4fr;gap:72px;
+  max-width:1100px;margin:0 auto;align-items:start;
+}
+.ci{display:flex;gap:18px;align-items:flex-start;margin-bottom:30px;}
+.ci-icon{
+  width:52px;height:52px;border-radius:14px;
+  background:rgba(46,125,50,.1);
+  border:1px solid rgba(46,125,50,.2);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.ci-icon svg{width:22px;height:22px;stroke:var(--accent);stroke-width:1.8;fill:none;}
+.ci h4{font-size:.8rem;color:var(--muted);margin-bottom:5px;font-weight:500;}
+.ci p{font-size:.95rem;font-weight:600;color:var(--primary);}
+.c-form{background:var(--gray);border-radius:22px;padding:44px;border:1px solid #eee;}
+.cf-g{margin-bottom:18px;}
+.cf-g label{
+  display:block;font-size:.8rem;font-weight:600;
+  color:var(--text);margin-bottom:7px;letter-spacing:.3px;
+}
+.cf-g input,.cf-g textarea,.cf-g select{
+  width:100%;padding:12px 16px;
+  border:1.5px solid #ddd;border-radius:11px;
+  font-size:.9rem;background:#fff;
+  transition:border-color .25s,box-shadow .25s;
+  font-family:inherit;color:var(--text);outline:none;
+}
+.cf-g input:focus,.cf-g textarea:focus,.cf-g select:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(46,125,50,.15);
+}
+.cf-g textarea{height:110px;resize:vertical;}
+.cf-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.csub{
+  width:100%;padding:14px;
+  background:var(--primary);color:#fff;
+  border:none;border-radius:12px;
+  font-size:1rem;font-weight:700;cursor:pointer;
+  transition:all .3s;letter-spacing:.5px;
+}
+.csub:hover{background:var(--accent2);transform:translateY(-2px);box-shadow:0 8px 24px rgba(45,90,142,.3);}
+
+/* ===== FOOTER ===== */
+footer{background:var(--primary);padding:64px 5% 32px;}
+.foot-inner{
+  display:grid;grid-template-columns:2fr 1fr 1fr;gap:48px;
+  margin-bottom:48px;
+}
+.foot-logo{font-size:1.7rem;font-weight:900;color:#fff;letter-spacing:3px;margin-bottom:14px;}
+.foot-logo span{color:var(--accent);}
+.foot-brand p{font-size:.85rem;color:rgba(255,255,255,.6);line-height:1.75;max-width:260px;}
+footer h5{font-size:.88rem;font-weight:700;color:#fff;margin-bottom:18px;letter-spacing:.5px;}
+footer ul{list-style:none;}
+footer ul li{margin-bottom:10px;}
+footer ul li a{
+  color:rgba(255,255,255,.6);text-decoration:none;
+  font-size:.84rem;transition:color .2s;
+}
+footer ul li a:hover{color:var(--accent);}
+.foot-bottom{
+  border-top:1px solid rgba(255,255,255,.1);
+  padding-top:24px;text-align:center;
+  font-size:.8rem;color:rgba(255,255,255,.4);
+}
+
+/* ===== LANGUAGE ===== */
+.at{display:block;}.et{display:none;}
+html.en .at{display:none;}html.en .et{display:block;}
+html.en{direction:ltr;}
+
+/* ===== NAV LOGO (all screens) ===== */
+.nav-logo img{
+  height: 200px; 
+  width: auto; 
+  position: relative;
+  right: 40px;
+  margin: -50px 0;
+  transition: transform 0.3s var(--ease);
+  display: block;
+}
+html.en .nav-logo img{
+  right: auto;
+  left: 100px;
+}
+.nav-logo img:hover{transform:scale(1.1);}
+
+/* ===== HAMBURGER MENU ===== */
+.hamburger{
+  display:none;
+  flex-direction:column;
+  justify-content:center;
+  gap:5px;
+  width:36px;height:36px;
+  background:none;border:none;
+  cursor:pointer;padding:4px;
+  z-index:1001;
+}
+.hamburger span{
+  display:block;width:100%;height:2.5px;
+  background:var(--primary);border-radius:4px;
+  transition:all .3s var(--ease);
+}
+.hamburger.active span:nth-child(1){transform:translateY(7.5px) rotate(45deg);}
+.hamburger.active span:nth-child(2){opacity:0;}
+.hamburger.active span:nth-child(3){transform:translateY(-7.5px) rotate(-45deg);}
+
+/* ===== TABLET (max-width: 1024px) ===== */
+@media(max-width:1024px){
+  nav{height:80px;padding:0 4%;}
+  #prog{top:80px;}
+  .nav-logo img{height:150px;right:20px;margin:-35px 0;}
+  html.en .nav-logo img{left:60px;}
+
+  .hamburger{display:flex;}
+
+  .nav-links{
+    position:fixed;top:0;right:-100%;left:auto;
+    width:280px;height:100vh;
+    flex-direction:column;
+    background:rgba(255,255,255,0.98);
+    backdrop-filter:blur(20px);
+    padding:100px 32px 40px;
+    gap:0;
+    box-shadow:-8px 0 32px rgba(0,0,0,0.1);
+    transition:right .4s var(--ease);
+    z-index:1000;
+    align-items:stretch;
+  }
+  html[dir="rtl"] .nav-links{
+    right:auto;left:-100%;
+    transition:left .4s var(--ease);
+    box-shadow:8px 0 32px rgba(0,0,0,0.1);
+  }
+  .nav-links.open{right:0;}
+  html[dir="rtl"] .nav-links.open{left:0;}
+
+  html.en .nav-links{left:auto;right:-100%;}
+  html.en .nav-links.open{right:0;}
+
+  .nav-links a{
+    padding:14px 8px;font-size:1.05rem;
+    border-bottom:1px solid rgba(0,0,0,0.06);
+  }
+  .nav-links a::after{display:none;}
+  .lang-btn{margin-top:16px;align-self:flex-start;}
+
+  /* Mobile overlay when menu open */
+  .nav-overlay{
+    display:none;position:fixed;inset:0;
+    background:rgba(0,0,0,0.4);z-index:999;
+  }
+  .nav-overlay.show{display:block;}
+
+  section{padding:80px 5% 60px;}
+  .sec-head{margin-bottom:48px;}
+
+  #home{min-height:100vh;}
+  .hero-body{padding:0 5%;}
+  .hero-h1{font-size:clamp(2rem,4.5vw,4rem);}
+  .stats-row{grid-template-columns:repeat(2,1fr);padding:18px 4%;}
+  .stat-n{font-size:1.8rem;}
+  .cr-dots{bottom:100px;}
+  .scroll-hint{bottom:78px;}
+
+  .srv-grid{grid-template-columns:1fr 1fr;gap:22px;}
+  .val-grid{grid-template-columns:1fr 1fr;gap:20px;}
+  .exp-inner{grid-template-columns:1fr;gap:48px;padding:80px 5%;}
+  .quote-inner{grid-template-columns:1fr;gap:48px;}
+  .about-wrap{grid-template-columns:1fr;gap:48px;}
+  .contact-wrap{grid-template-columns:1fr;gap:48px;}
+
+  .about-img{height:380px;}
+  .about-img-side::before{top:-12px;right:-12px;}
+  html.en .about-img-side::before{left:-12px;}
+
+  .q-form{padding:32px 28px;}
+  .c-form{padding:32px 28px;}
+
+  .foot-inner{grid-template-columns:1fr 1fr;gap:36px;}
+}
+
+/* ===== MOBILE (max-width: 640px) ===== */
+@media(max-width:640px){
+  nav{height:70px;padding:0 4%;}
+  #prog{top:70px;}
+  .nav-logo img{height:120px;right:10px;margin:-25px 0;}
+  html.en .nav-logo img{left:40px;}
+  .nav-links{width:260px;padding:90px 24px 32px;}
+
+  section{padding:60px 4% 50px;}
+  .sec-head{margin-bottom:36px;}
+  .sec-title{font-size:clamp(1.5rem,6vw,2.2rem);}
+  .sec-sub{font-size:.9rem;}
+
+  #home{min-height:100svh;}
+  .hero-body{padding:0 5%;justify-content:center;}
+  .hero-pill{font-size:.65rem;padding:5px 14px;margin-bottom:18px;}
+  .hero-h1{font-size:clamp(1.7rem,7vw,2.8rem);margin-bottom:16px;}
+  .hero-p{font-size:.92rem;margin-bottom:28px;line-height:1.7;}
+  .hero-btns{gap:10px;}
+  .btn-g,.btn-w{padding:12px 24px;font-size:.85rem;}
+
+  .stats-row{
+    grid-template-columns:1fr 1fr;
+    padding:14px 3%;gap:0;
+  }
+  .stat-col{padding:10px 8px;}
+  .stat-n{font-size:1.4rem;}
+  .stat-l{font-size:.65rem;}
+  .cr-dots{bottom:88px;}
+  .scroll-hint{display:none;}
+  .cr-arrow{width:40px;height:40px;}
+  .cr-arrow svg{width:16px;height:16px;}
+
+  .srv-grid{grid-template-columns:1fr;gap:18px;}
+  .srv-img{height:180px;}
+  .srv-body{padding:20px 18px;}
+  .srv-name{font-size:1rem;}
+  .srv-desc{font-size:.82rem;}
+
+  .exp-inner{padding:60px 5%;}
+  .exp-nums{grid-template-columns:1fr 1fr;gap:12px;}
+  .exp-box{padding:20px 16px;}
+  .exp-box .en{font-size:2rem;}
+  .exp-box .el{font-size:.75rem;}
+
+  .val-grid{grid-template-columns:1fr;gap:14px;}
+  .val-card{padding:28px 20px;}
+  .val-icon-wrap{width:52px;height:52px;border-radius:14px;}
+  .val-icon-wrap svg{width:24px;height:24px;}
+
+  .quote-inner{gap:36px;}
+  .q-form{padding:24px 18px;border-radius:18px;}
+  .q-form-title{font-size:1rem;margin-bottom:20px;padding-bottom:14px;}
+  .fg-row{grid-template-columns:1fr;}
+  .fg input,.fg select,.fg textarea{padding:10px 14px;font-size:.85rem;}
+  .qsub{padding:13px;font-size:.9rem;}
+
+  .about-wrap{gap:32px;}
+  .about-img{height:280px;border-radius:16px;}
+  .about-img-side::before{top:-10px;right:-10px;border-radius:16px;}
+  html.en .about-img-side::before{left:-10px;}
+  .about-stamp{bottom:20px;left:20px;padding:14px 18px;border-radius:12px;}
+  html.en .about-stamp{right:20px;}
+  .about-stamp .big{font-size:1.7rem;}
+  .about-stamp .sm{font-size:.7rem;}
+  .about-txt .sec-head{margin-bottom:20px;}
+  .checks li{padding:9px 0;font-size:.84rem;}
+  .ck{width:20px;height:20px;}
+  .ck svg{width:10px;height:10px;}
+
+  .contact-wrap{gap:36px;}
+  .cf-row{grid-template-columns:1fr;}
+  .c-form{padding:24px 18px;border-radius:16px;}
+  .cf-g input,.cf-g textarea,.cf-g select{padding:10px 14px;font-size:.85rem;}
+  .csub{padding:13px;font-size:.9rem;}
+  .ci-icon{width:44px;height:44px;border-radius:12px;}
+  .ci-icon svg{width:18px;height:18px;}
+  .ci h4{font-size:.75rem;}
+  .ci p{font-size:.88rem;}
+
+  .foot-inner{grid-template-columns:1fr;gap:32px;margin-bottom:36px;}
+  footer{padding:48px 5% 24px;}
+  .foot-logo img{height:70px!important;}
+  .foot-brand p{max-width:100%;}
+  .foot-bottom{font-size:.72rem;padding-top:20px;}
+
+  .perks li{font-size:.84rem;padding:9px 0;}
+  .perk-dot{width:6px;height:6px;}
+}
+
+/* ===== VERY SMALL DEVICES (max-width: 380px) ===== */
+@media(max-width:380px){
+  nav{padding:0 3%;}
+  .nav-logo img{height:100px;right:5px;margin:-20px 0;}
+  html.en .nav-logo img{left:20px;}
+  .hero-h1{font-size:clamp(1.4rem,6.5vw,2.2rem);}
+  .hero-p{font-size:.85rem;}
+  .btn-g,.btn-w{padding:10px 18px;font-size:.8rem;}
+  .stats-row{padding:10px 2%;}
+  .stat-n{font-size:1.2rem;}
+  .stat-l{font-size:.6rem;}
+  .exp-box .en{font-size:1.6rem;}
+  .q-form{padding:20px 14px;}
+  .c-form{padding:20px 14px;}
+}
+
+
+</style>
+</head>
+<body>
+
+<div id="curtain">
+  <div class="curtain-strip"></div>
+  <div class="curtain-strip"></div>
+  <div class="curtain-strip"></div>
+</div>
+<div id="prog"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#home" class="nav-logo" onclick="go(event,'#home')">
+    <img src="logo/WhatsApp_Image_2026-06-19_at_23.47.25-removebg-preview.png" alt="AGL">
+  </a>
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="nav-links" id="navLinks">
+    <a href="#home"     onclick="go(event,'#home')"><span class="at">الرئيسية</span><span class="et">Home</span></a>
+    <a href="#services" onclick="go(event,'#services')"><span class="at">الخدمات</span><span class="et">Services</span></a>
+    <a href="#about"    onclick="go(event,'#about')"><span class="at">عن الشركة</span><span class="et">About</span></a>
+    <a href="#contact"  onclick="go(event,'#contact')"><span class="at">تواصل معنا</span><span class="et">Contact</span></a>
+    <button class="lang-btn" onclick="toggleLang()">AR</button>
+  </div>
+</nav>
+<div class="nav-overlay" id="navOverlay"></div>
+
+<!-- HOME -->
+<section id="home">
+  <div class="hero-video-wrap">
+    <video class="hero-video" autoplay muted loop playsinline>
+      <source src="videos/WhatsApp Video 2026-06-19 at 23.58.52.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="hero-overlay"></div>
+  <div class="hero-body">
+    <div class="hero-pill rv">
+      <div class="hero-pill-dot"></div>
+      <span class="at">الحلول اللوجستية المتكاملة</span>
+      <span class="et">Advanced Global Logistics</span>
+    </div>
+    <h1 class="hero-h1 rv d1">
+      <span class="at">نحرك العالم<br>بكل <span class="hl">ثقة واحترافية</span></span>
+      <span class="et">Moving The World<br>With <span class="hl">Trust & Excellence</span></span>
+    </h1>
+    <p class="hero-p rv d2">
+      <span class="at">AGL – شريكك اللوجستي الموثوق في الشحن البري والبحري والجوي، نضمن لك وصول بضائعك في أسرع وقت وبأعلى جودة.</span>
+      <span class="et">AGL – Your trusted logistics partner for land, sea, and air freight. We guarantee timely delivery with world-class standards.</span>
+    </p>
+    <div class="hero-btns rv d3">
+      <a href="#services" class="btn-g" onclick="go(event,'#services')">
+        <span class="at">اكتشف خدماتنا</span><span class="et">Our Services</span>
+      </a>
+      <a href="#contact" class="btn-w" onclick="go(event,'#contact')">
+        <span class="at">تواصل معنا</span><span class="et">Contact Us</span>
+      </a>
+    </div>
+  </div>
+  <div class="stats-row rv d4">
+    <div class="stat-col">
+      <div class="stat-n">+500</div>
+      <div class="stat-l at">عميل راضٍ</div><div class="stat-l et">Happy Clients</div>
+    </div>
+    <div class="stat-col">
+      <div class="stat-n">+80</div>
+      <div class="stat-l at">دولة نخدمها</div><div class="stat-l et">Countries</div>
+    </div>
+    <div class="stat-col">
+      <div class="stat-n">+15</div>
+      <div class="stat-l at">سنة خبرة</div><div class="stat-l et">Years Experience</div>
+    </div>
+    <div class="stat-col">
+      <div class="stat-n">99%</div>
+      <div class="stat-l at">معدل التسليم</div><div class="stat-l et">On-Time Delivery</div>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <div class="s-arrow"></div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section id="services">
+  <div class="sec-head">
+    <div class="sec-tag rv"><span class="at">ما نقدمه</span><span class="et">What We Offer</span></div>
+    <h2 class="sec-title rv d1"><span class="at">الخدمات الأساسية</span><span class="et">Core Services</span></h2>
+    <p class="sec-sub rv d2">
+      <span class="at">حلول شاملة تغطي كل احتياجات الشحن والتوزيع والتخزين</span>
+      <span class="et">Comprehensive solutions covering all your shipping, distribution, and storage needs</span>
+    </p>
+  </div>
+  <div class="srv-grid">
+    <!-- Air -->
+    <div class="srv-card rv d1">
+      <div class="srv-img">
+        <img src="images/WhatsApp Image 2026-06-19 at 23.52.35 (1).jpeg" alt="Air Freight">
+        <div class="srv-img-overlay"></div>
+      </div>
+      <div class="srv-body">
+        <div class="srv-num">01</div>
+        <div class="srv-name at">الشحن الجوي</div><div class="srv-name et">Air Freight</div>
+        <div class="srv-desc at">حلول شحن جوي سريعة وآمنة إلى جميع أنحاء العالم مع تتبع لحظي للشحنات.</div>
+        <div class="srv-desc et">Fast and secure air freight solutions worldwide with real-time shipment tracking.</div>
+        <div class="srv-tags">
+          <span class="srv-tag at">سريع</span><span class="srv-tag et">Fast</span>
+          <span class="srv-tag at">آمن</span><span class="srv-tag et">Secure</span>
+          <span class="srv-tag at">عالمي</span><span class="srv-tag et">Global</span>
+        </div>
+      </div>
+    </div>
+    <!-- Sea -->
+    <div class="srv-card rv d2">
+      <div class="srv-img">
+        <img src="images/WhatsApp Image 2026-06-19 at 23.52.21.jpeg" alt="Sea Freight">
+        <div class="srv-img-overlay"></div>
+      </div>
+      <div class="srv-body">
+        <div class="srv-num">02</div>
+        <div class="srv-name at">الشحن البحري</div><div class="srv-name et">Sea Freight</div>
+        <div class="srv-desc at">خدمات شحن بحري بأسعار تنافسية للشحنات الضخمة عبر أكبر الموانئ العالمية.</div>
+        <div class="srv-desc et">Competitive sea freight for bulk shipments across major global ports.</div>
+        <div class="srv-tags">
+          <span class="srv-tag at">اقتصادي</span><span class="srv-tag et">Economical</span>
+          <span class="srv-tag at">ضخم</span><span class="srv-tag et">Bulk</span>
+          <span class="srv-tag at">موثوق</span><span class="srv-tag et">Reliable</span>
+        </div>
+      </div>
+    </div>
+    <!-- Land -->
+    <div class="srv-card rv d3">
+      <div class="srv-img">
+        <img src="images/WhatsApp Image 2026-06-19 at 23.52.25.jpeg" alt="Land Transport">
+        <div class="srv-img-overlay"></div>
+      </div>
+      <div class="srv-body">
+        <div class="srv-num">03</div>
+        <div class="srv-name at">الشحن البري</div><div class="srv-name et">Land Transport</div>
+        <div class="srv-desc at">شبكة نقل بري واسعة تغطي كافة المدن والدول مع ضمان الأمان والدقة في التسليم.</div>
+        <div class="srv-desc et">Extensive land transport network covering all cities with guaranteed safety and precision.</div>
+        <div class="srv-tags">
+          <span class="srv-tag at">شبكة واسعة</span><span class="srv-tag et">Wide Network</span>
+          <span class="srv-tag at">دقيق</span><span class="srv-tag et">Precise</span>
+        </div>
+      </div>
+    </div>
+    <!-- Warehouse -->
+    <div class="srv-card rv d1">
+      <div class="srv-img">
+        <img src="images/WhatsApp Image 2026-06-19 at 23.52.32 (2).jpeg" alt="Warehousing">
+        <div class="srv-img-overlay"></div>
+      </div>
+      <div class="srv-body">
+        <div class="srv-num">04</div>
+        <div class="srv-name at">التخزين والتوزيع</div><div class="srv-name et">Warehousing & Distribution</div>
+        <div class="srv-desc at">مستودعات متطورة بأحدث التقنيات لضمان سلامة بضائعك وتوزيعها بكفاءة.</div>
+        <div class="srv-desc et">State-of-the-art warehouses with advanced systems for safe storage and efficient distribution.</div>
+        <div class="srv-tags">
+          <span class="srv-tag at">متطور</span><span class="srv-tag et">Advanced</span>
+          <span class="srv-tag at">آمن</span><span class="srv-tag et">Secure</span>
+        </div>
+      </div>
+    </div>
+    <!-- Customs -->
+    <div class="srv-card rv d2">
+      <div class="srv-img">
+        <img src="images/WhatsApp Image 2026-06-19 at 23.52.35.jpeg" alt="Customs">
+        <div class="srv-img-overlay"></div>
+      </div>
+      <div class="srv-body">
+        <div class="srv-num">05</div>
+        <div class="srv-name at">التخليص الجمركي</div><div class="srv-name et">Customs Clearance</div>
+        <div class="srv-desc at">خبراء جمارك متمرسون يضمنون تخليص شحناتك بسرعة وبدون أي تأخير.</div>
+        <div class="srv-desc et">Expert customs agents ensuring swift clearance with zero delays.</div>
+        <div class="srv-tags">
+          <span class="srv-tag at">سريع</span><span class="srv-tag et">Fast</span>
+          <span class="srv-tag at">احترافي</span><span class="srv-tag et">Professional</span>
+        </div>
+      </div>
+    </div>
+    <!-- Tracking -->
+    <div class="srv-card rv d3">
+      <div class="srv-img">
+        <img src="images/WhatsApp Image 2026-06-19 at 23.52.36 (1).jpeg" alt="Tracking">
+        <div class="srv-img-overlay"></div>
+      </div>
+      <div class="srv-body">
+        <div class="srv-num">06</div>
+        <div class="srv-name at">التتبع اللحظي</div><div class="srv-name et">Live Tracking</div>
+        <div class="srv-desc at">نظام تتبع ذكي يمنحك رؤية كاملة لشحنتك في كل لحظة وأي مكان حول العالم.</div>
+        <div class="srv-desc et">Smart tracking system giving you full visibility of your shipment anytime, anywhere.</div>
+        <div class="srv-tags">
+          <span class="srv-tag at">لحظي</span><span class="srv-tag et">Real-Time</span>
+          <span class="srv-tag at">ذكي</span><span class="srv-tag et">Smart</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EXPERIENCE -->
+<section id="experience">
+  <div class="exp-bg"></div>
+  <div class="exp-overlay"></div>
+  <div class="exp-inner">
+    <div class="exp-left">
+      <div class="sec-tag rv at">خبرتنا</div>
+      <div class="sec-tag rv et">Our Experience</div>
+      <h2 class="sec-title rv d1 at">15 عاماً من التميز اللوجستي</h2>
+      <h2 class="sec-title rv d1 et">15 Years of Logistics Excellence</h2>
+      <p class="sec-sub rv d2 at">منذ تأسيسنا بنينا سمعة راسخة على الدقة والموثوقية وخدمة عملاء استثنائية تمتد لأكثر من 80 دولة حول العالم.</p>
+      <p class="sec-sub rv d2 et">Since our founding we have built a solid reputation on precision, reliability, and exceptional customer service across 80+ countries worldwide.</p>
+    </div>
+    <div class="exp-nums">
+      <div class="exp-box rvs d1"><div class="en">+15</div><div class="el at">سنة من الخبرة</div><div class="el et">Years of experience</div></div>
+      <div class="exp-box rvs d2"><div class="en">+80</div><div class="el at">دولة في شبكتنا</div><div class="el et">Countries in our network</div></div>
+      <div class="exp-box rvs d3"><div class="en">+500</div><div class="el at">عميل وشريك تجاري</div><div class="el et">Clients & partners</div></div>
+      <div class="exp-box rvs d4"><div class="en">+50K</div><div class="el at">شحنة تم تسليمها</div><div class="el et">Shipments delivered</div></div>
+      <div class="exp-box rvs d3"><div class="en">99%</div><div class="el at">معدل التسليم في الوقت</div><div class="el et">On-time delivery rate</div></div>
+      <div class="exp-box rvs d4"><div class="en">24/7</div><div class="el at">دعم فني وخدمة عملاء</div><div class="el et">Support & customer service</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- VALUES -->
+<section id="values">
+  <div class="sec-head">
+    <div class="sec-tag rv"><span class="at">ما يميزنا</span><span class="et">What Drives Us</span></div>
+    <h2 class="sec-title rv d1"><span class="at">قيمنا الأساسية</span><span class="et">Core Values</span></h2>
+    <p class="sec-sub rv d2">
+      <span class="at">المبادئ التي تحكم كل قرار نتخذه وكل خدمة نقدمها</span>
+      <span class="et">The principles that guide every decision we make and every service we deliver</span>
+    </p>
+  </div>
+  <div class="val-grid">
+    <div class="val-card rv d1">
+      <div class="val-icon-wrap">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div class="val-name at">الأمانة والثقة</div><div class="val-name et">Integrity & Trust</div>
+      <div class="val-desc at">نلتزم بأعلى معايير الشفافية والأمانة في كل تعاملاتنا مع عملائنا وشركائنا.</div>
+      <div class="val-desc et">We uphold the highest standards of transparency and integrity in all dealings with clients and partners.</div>
+    </div>
+    <div class="val-card rv d2">
+      <div class="val-icon-wrap">
+        <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      </div>
+      <div class="val-name at">السرعة والكفاءة</div><div class="val-name et">Speed & Efficiency</div>
+      <div class="val-desc at">نقدم حلولاً سريعة وفعّالة تضمن وصول شحنتك في أسرع وقت دون التنازل عن الجودة.</div>
+      <div class="val-desc et">Fast and effective solutions ensuring your shipment arrives as quickly as possible without compromising quality.</div>
+    </div>
+    <div class="val-card rv d3">
+      <div class="val-icon-wrap">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      </div>
+      <div class="val-name at">الوصول العالمي</div><div class="val-name et">Global Reach</div>
+      <div class="val-desc at">شبكة عالمية ممتدة تضمن لك الوصول إلى أي مكان في العالم بأمان ودقة.</div>
+      <div class="val-desc et">An extensive global network ensuring you reach any corner of the world safely and precisely.</div>
+    </div>
+    <div class="val-card rv d4">
+      <div class="val-icon-wrap">
+        <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+      </div>
+      <div class="val-name at">التميز والجودة</div><div class="val-name et">Excellence & Quality</div>
+      <div class="val-desc at">معايير جودة دولية معتمدة وشهادات ISO تضمن أعلى مستويات الخدمة في كل عملية.</div>
+      <div class="val-desc et">ISO-certified international quality standards ensuring the highest service levels in every operation.</div>
+    </div>
+  </div>
+</section>
+
+<!-- GET A QUOTE -->
+<section id="quote">
+  <div class="quote-inner">
+    <div class="quote-left">
+      <div class="sec-tag rv at">عرض سعر مجاني</div>
+      <div class="sec-tag rv et">Free Quotation</div>
+      <h2 class="sec-title rv d1 at">احصل على عرض سعر الآن</h2>
+      <h2 class="sec-title rv d1 et">Get A Quote Now</h2>
+      <p class="sec-sub rv d2 at">فريقنا جاهز لتقديم أفضل الأسعار وأنسب الحلول اللوجستية لاحتياجاتك.</p>
+      <p class="sec-sub rv d2 et">Our team is ready to offer the best prices and most suitable logistics solutions for your needs.</p>
+      <ul class="perks rv d3">
+        <li><div class="perk-dot"></div><span class="at">رد سريع خلال 24 ساعة</span><span class="et">Quick response within 24 hours</span></li>
+        <li><div class="perk-dot"></div><span class="at">أسعار تنافسية وشفافة</span><span class="et">Competitive and transparent pricing</span></li>
+        <li><div class="perk-dot"></div><span class="at">حلول مخصصة لكل عميل</span><span class="et">Customized solutions for every client</span></li>
+        <li><div class="perk-dot"></div><span class="at">دعم متخصص على مدار الساعة</span><span class="et">Specialized 24/7 support</span></li>
+        <li><div class="perk-dot"></div><span class="at">لا توجد رسوم خفية</span><span class="et">No hidden fees</span></li>
+      </ul>
+    </div>
+    <div class="q-form rvr d1">
+      <div class="q-form-title at">أرسل طلبك الآن</div>
+      <div class="q-form-title et">Submit Your Request</div>
+      <div class="fg-row">
+        <div class="fg"><label class="at">الاسم الكامل</label><label class="et">Full Name</label><input type="text"></div>
+        <div class="fg"><label class="at">الشركة</label><label class="et">Company</label><input type="text"></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label class="at">البريد الإلكتروني</label><label class="et">Email</label><input type="email"></div>
+        <div class="fg"><label class="at">الهاتف</label><label class="et">Phone</label><input type="tel"></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg">
+          <label class="at">نوع الشحن</label><label class="et">Freight Type</label>
+          <select>
+            <option class="at">الشحن الجوي</option><option class="et">Air Freight</option>
+            <option class="at">الشحن البحري</option><option class="et">Sea Freight</option>
+            <option class="at">الشحن البري</option><option class="et">Land Transport</option>
+          </select>
+        </div>
+        <div class="fg"><label class="at">الوزن التقريبي</label><label class="et">Approximate Weight</label><input type="text" placeholder="kg / CBM"></div>
+      </div>
+      <div class="fg-row">
+        <div class="fg"><label class="at">من (المدينة)</label><label class="et">From (City)</label><input type="text"></div>
+        <div class="fg"><label class="at">إلى (المدينة)</label><label class="et">To (City)</label><input type="text"></div>
+      </div>
+      <div class="fg"><label class="at">تفاصيل إضافية</label><label class="et">Additional Details</label><textarea></textarea></div>
+      <button class="qsub"><span class="at">إرسال الطلب</span><span class="et">Submit Request</span></button>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="about-wrap">
+    <div class="about-img-side rvl">
+      <img src="images/WhatsApp Image 2026-06-19 at 23.52.26.jpeg" alt="AGL Logistics" class="about-img">
+      <div class="about-stamp">
+        <div class="big">15+</div>
+        <div class="sm at">سنة في اللوجستيات</div>
+        <div class="sm et">Years in Logistics</div>
+      </div>
+    </div>
+    <div class="about-txt">
+      <div class="sec-head">
+        <div class="sec-tag rv at">من نحن</div>
+        <div class="sec-tag rv et">About Us</div>
+        <h2 class="sec-title rv d1 at">شركاؤك في كل رحلة شحن</h2>
+        <h2 class="sec-title rv d1 et">Your Partner in Every Shipment</h2>
+        <p class="sec-sub rv d2 at">AGL – Advanced Global Logistics – شركة رائدة في مجال اللوجستيات والشحن الدولي، تأسست على مبدأ أن الثقة والجودة والسرعة هي أساس كل شراكة ناجحة.</p>
+        <p class="sec-sub rv d2 et">AGL – Advanced Global Logistics – a leading company in international shipping, built on the principle that trust, quality, and speed are the foundation of every successful partnership.</p>
+      </div>
+      <ul class="checks rv d3">
+        <li>
+          <div class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="at">فريق متخصص من خبراء اللوجستيات بخبرة تتجاوز 15 عاماً</span>
+          <span class="et">Specialized team of logistics experts with 15+ years of experience</span>
+        </li>
+        <li>
+          <div class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="at">شبكة شركاء موثوقة في أكثر من 80 دولة حول العالم</span>
+          <span class="et">Trusted partner network in 80+ countries worldwide</span>
+        </li>
+        <li>
+          <div class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="at">حلول مخصصة تناسب كل عميل ونوع شحنة</span>
+          <span class="et">Customized solutions tailored to every client and cargo type</span>
+        </li>
+        <li>
+          <div class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="at">دعم فني وخدمة عملاء على مدار 24 ساعة / 7 أيام</span>
+          <span class="et">24/7 technical support and customer service</span>
+        </li>
+        <li>
+          <div class="ck"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <span class="at">معايير جودة دولية معتمدة وشهادات ISO</span>
+          <span class="et">Certified international quality standards and ISO certifications</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="sec-head">
+    <div class="sec-tag rv"><span class="at">نحن هنا</span><span class="et">We Are Here</span></div>
+    <h2 class="sec-title rv d1"><span class="at">تواصل معنا</span><span class="et">Contact Us</span></h2>
+    <p class="sec-sub rv d2">
+      <span class="at">فريقنا جاهز للإجابة على جميع استفساراتك وتقديم أفضل الحلول اللوجستية</span>
+      <span class="et">Our team is ready to answer all your inquiries and provide the best logistics solutions</span>
+    </p>
+  </div>
+  <div class="contact-wrap">
+    <div class="rvl">
+      <div class="ci">
+        <div class="ci-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <div>
+          <h4 class="at">العنوان</h4><h4 class="et">Address</h4>
+          <p class="at">القاهرة، مصر – المنطقة الحرة بالمطار</p>
+          <p class="et">Cairo, Egypt – Airport Free Zone</p>
+        </div>
+      </div>
+      <div class="ci">
+        <div class="ci-icon">
+          <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.28h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l.86-.86a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.28 16.92z"/></svg>
+        </div>
+        <div>
+          <h4 class="at">الهاتف</h4><h4 class="et">Phone</h4>
+          <p>+20 100 000 0000</p>
+        </div>
+      </div>
+      <div class="ci">
+        <div class="ci-icon">
+          <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </div>
+        <div>
+          <h4 class="at">البريد الإلكتروني</h4><h4 class="et">Email</h4>
+          <p>info@agl-logistics.com</p>
+        </div>
+      </div>
+      <div class="ci">
+        <div class="ci-icon">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div>
+          <h4 class="at">ساعات العمل</h4><h4 class="et">Working Hours</h4>
+          <p class="at">الأحد – الخميس، 9 ص – 6 م</p>
+          <p class="et">Sun – Thu, 9 AM – 6 PM</p>
+        </div>
+      </div>
+    </div>
+    <div class="c-form rvr">
+      <div class="cf-row">
+        <div class="cf-g"><label class="at">الاسم الكامل</label><label class="et">Full Name</label><input type="text"></div>
+        <div class="cf-g"><label class="at">البريد الإلكتروني</label><label class="et">Email</label><input type="email"></div>
+      </div>
+      <div class="cf-g"><label class="at">رقم الهاتف</label><label class="et">Phone Number</label><input type="tel"></div>
+      <div class="cf-g">
+        <label class="at">نوع الخدمة</label><label class="et">Service Type</label>
+        <select>
+          <option class="at">الشحن الجوي</option><option class="et">Air Freight</option>
+          <option class="at">الشحن البحري</option><option class="et">Sea Freight</option>
+          <option class="at">الشحن البري</option><option class="et">Land Transport</option>
+          <option class="at">التخليص الجمركي</option><option class="et">Customs Clearance</option>
+        </select>
+      </div>
+      <div class="cf-g"><label class="at">رسالتك</label><label class="et">Message</label><textarea></textarea></div>
+      <button class="csub"><span class="at">إرسال الرسالة</span><span class="et">Send Message</span></button>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-inner">
+    <div class="foot-brand">
+      <div class="foot-logo">
+        <img src="logo/WhatsApp_Image_2026-06-19_at_23.47.25-removebg-preview.png" alt="AGL" style="height:100px; margin-bottom:15px; filter: brightness(0) invert(1);">
+      </div>
+      <p class="at">Advanced Global Logistics – شريكك الموثوق في كل رحلة شحن حول العالم.</p>
+      <p class="et">Advanced Global Logistics – Your trusted partner in every shipment journey worldwide.</p>
+    </div>
+    <div>
+      <h5 class="at">روابط سريعة</h5><h5 class="et">Quick Links</h5>
+      <ul>
+        <li><a href="#home"     onclick="go(event,'#home')">    <span class="at">الرئيسية</span><span class="et">Home</span></a></li>
+        <li><a href="#services" onclick="go(event,'#services')"><span class="at">الخدمات</span><span class="et">Services</span></a></li>
+        <li><a href="#about"    onclick="go(event,'#about')">   <span class="at">عن الشركة</span><span class="et">About</span></a></li>
+        <li><a href="#contact"  onclick="go(event,'#contact')"> <span class="at">تواصل معنا</span><span class="et">Contact</span></a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h5 class="at">تواصل معنا</h5><h5 class="et">Get In Touch</h5>
+      <ul>
+        <li><a href="tel:+201000000000">+20 100 000 0000</a></li>
+        <li><a href="mailto:info@agl-logistics.com">info@agl-logistics.com</a></li>
+        <li><span style="color:rgba(255,255,255,.6);font-size:.84rem;" class="at">القاهرة، مصر</span><span style="color:rgba(255,255,255,.6);font-size:.84rem;" class="et">Cairo, Egypt</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <span class="at">© 2025 AGL – Advanced Global Logistics. جميع الحقوق محفوظة.</span>
+    <span class="et">© 2025 AGL – Advanced Global Logistics. All rights reserved.</span>
+  </div>
+</footer>
+
+<script>
+const nav=document.getElementById('nav');
+const prog=document.getElementById('prog');
+
+window.addEventListener('scroll',()=>{
+  const st=window.scrollY;
+  const dh=document.documentElement.scrollHeight-window.innerHeight;
+  prog.style.width=(st/dh*100)+'%';
+  nav.classList.toggle('scrolled',st>40);
+  highlightNav();
+});
+
+function highlightNav(){
+  const secs=document.querySelectorAll('section[id]');
+  const links=document.querySelectorAll('.nav-links a');
+  let cur='';
+  secs.forEach(s=>{if(window.scrollY>=s.offsetTop-100)cur=s.id;});
+  links.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+cur));
+}
+
+let busy=false;
+function go(e,target){
+  e.preventDefault();
+  if(busy)return;
+  const el=document.querySelector(target);
+  if(!el)return;
+  busy=true;
+  const c=document.getElementById('curtain');
+  c.classList.remove('leaving');
+  c.classList.add('going');
+  setTimeout(()=>{
+    window.scrollTo({top:Math.max(0,el.offsetTop-100),behavior:'instant'});
+    c.classList.remove('going');
+    c.classList.add('leaving');
+    setTimeout(()=>{c.classList.remove('leaving');busy=false;},480);
+  },460);
+}
+
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(en=>{if(en.isIntersecting)en.target.classList.add('on');});
+},{threshold:0.05,rootMargin:'0px 0px -10% 0px'});
+document.querySelectorAll('.rv,.rvl,.rvr,.rvs').forEach(el=>obs.observe(el));
+
+let isEn=true;
+function toggleLang(){
+  isEn=!isEn;
+  const h=document.documentElement;
+  const btn=document.querySelector('.lang-btn');
+  if(isEn){h.classList.add('en');h.setAttribute('lang','en');h.setAttribute('dir','ltr');btn.textContent='AR';}
+  else{h.classList.remove('en');h.setAttribute('lang','ar');h.setAttribute('dir','rtl');btn.textContent='EN';}
+}
+
+// Ensure base state
+if(isEn){
+  const h=document.documentElement;
+  h.classList.add('en');h.setAttribute('lang','en');h.setAttribute('dir','ltr');
+  document.querySelector('.lang-btn').textContent='AR';
+}
+
+// ===== HAMBURGER MENU =====
+const hamburger=document.getElementById('hamburger');
+const navLinks=document.getElementById('navLinks');
+const navOverlay=document.getElementById('navOverlay');
+
+function toggleMenu(){
+  hamburger.classList.toggle('active');
+  navLinks.classList.toggle('open');
+  navOverlay.classList.toggle('show');
+  document.body.style.overflow=navLinks.classList.contains('open')?'hidden':'';
+}
+function closeMenu(){
+  hamburger.classList.remove('active');
+  navLinks.classList.remove('open');
+  navOverlay.classList.remove('show');
+  document.body.style.overflow='';
+}
+hamburger.addEventListener('click',toggleMenu);
+navOverlay.addEventListener('click',closeMenu);
+// Close menu when clicking nav links
+navLinks.querySelectorAll('a').forEach(a=>a.addEventListener('click',closeMenu));
+// Close menu on window resize to desktop
+window.addEventListener('resize',()=>{if(window.innerWidth>1024)closeMenu();});
+</script>
+</body>
+</html>
